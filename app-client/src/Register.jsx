@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react'; 
+import { Button } from "@/components/ui/button";
 
 function Register({ onRegisterSuccess, onNavigateToLogin }) {
   const [username, setUsername] = useState('');
@@ -6,42 +8,36 @@ function Register({ onRegisterSuccess, onNavigateToLogin }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       alert("Les mots de passe ne correspondent pas !");
       return;
     }
-    console.log("Inscription demandée :", { username, email, password });
-    // Plus tard, ces informations seront envoyées à l'API Django
     onRegisterSuccess();
   };
 
+  const toggleVisibility = (setter) => {
+    setter(prev => !prev);
+  };
+
+  const inputWrapperClass = "relative w-full"; 
+  const inputClass = "w-full p-3 pr-12 rounded-md border border-[var(--line-strong)] bg-[var(--bg)] text-[var(--ink)] box-border outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all";
+  const iconClass = "absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--ink-muted)] cursor-pointer hover:text-[var(--ink)] transition-colors";
+
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh', 
-      backgroundColor: '#030637', 
-      fontFamily: 'sans-serif' 
-    }}>
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '400px', 
-        padding: '40px 30px', 
-        backgroundColor: '#3C0753', 
-        borderRadius: '12px', 
-        boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-        color: '#ffffff'
-      }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '25px', color: '#ffffff', fontWeight: '600' }}>
-          Créer un compte B2B
+    <div className="flex justify-center items-center h-screen bg-[var(--bg)] text-[var(--ink)] font-sans">
+      <div className="w-full max-w-[400px] p-10 px-8 bg-[var(--surface)] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.3)] border border-[var(--line-strong)]">
+        <h2 className="text-center mb-[25px] text-[var(--ink)] font-semibold text-2xl">
+          Nouveau membre
         </h2>
         
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#e0e0e0', fontSize: '14px' }}>
+          <div className="mb-4">
+            <label className="block mb-1.5 text-[var(--ink-muted)] text-sm">
               Nom d'utilisateur
             </label>
             <input 
@@ -49,12 +45,12 @@ function Register({ onRegisterSuccess, onNavigateToLogin }) {
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
               required 
-              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #720455', backgroundColor: '#030637', color: '#ffffff', boxSizing: 'border-box', outline: 'none' }}
+              className={inputClass}
             />
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#e0e0e0', fontSize: '14px' }}>
+          <div className="mb-4">
+            <label className="block mb-1.5 text-[var(--ink-muted)] text-sm">
               Email 
             </label>
             <input 
@@ -62,56 +58,65 @@ function Register({ onRegisterSuccess, onNavigateToLogin }) {
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
-              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #720455', backgroundColor: '#030637', color: '#ffffff', boxSizing: 'border-box', outline: 'none' }}
+              className={inputClass}
             />
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#e0e0e0', fontSize: '14px' }}>
+          <div className="mb-4">
+            <label className="block mb-1.5 text-[var(--ink-muted)] text-sm">
               Mot de passe
             </label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              required 
-              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #720455', backgroundColor: '#030637', color: '#ffffff', boxSizing: 'border-box', outline: 'none' }}
-            />
+            <div className={inputWrapperClass}>
+              <input 
+                type={showPassword ? "text" : "password"} 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+                className={inputClass}
+              />
+              {showPassword ? (
+                <EyeOff onClick={() => toggleVisibility(setShowPassword)} className={iconClass} />
+              ) : (
+                <Eye onClick={() => toggleVisibility(setShowPassword)} className={iconClass} />
+              )}
+            </div>
           </div>
 
-          <div style={{ marginBottom: '25px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#e0e0e0', fontSize: '14px' }}>
-              Confirmer le mot de passe
+          <div className="mb-6">
+            <label className="block mb-1.5 text-[var(--ink-muted)] text-sm">
+              Répéter le mot de passe
             </label>
-            <input 
-              type="password" 
-              value={confirmPassword} 
-              onChange={(e) => setConfirmPassword(e.target.value)} 
-              required 
-              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #720455', backgroundColor: '#030637', color: '#ffffff', boxSizing: 'border-box', outline: 'none' }}
-            />
+            <div className={inputWrapperClass}>
+              <input 
+                type={showConfirmPassword ? "text" : "password"} 
+                value={confirmPassword} 
+                onChange={(e) => setConfirmPassword(e.target.value)} 
+                required 
+                className={inputClass}
+              />
+              {showConfirmPassword ? (
+                <EyeOff onClick={() => toggleVisibility(setShowConfirmPassword)} className={iconClass} />
+              ) : (
+                <Eye onClick={() => toggleVisibility(setShowConfirmPassword)} className={iconClass} />
+              )}
+            </div>
           </div>
 
-          <button 
+          {/* Utilisation du Button Shadcn */}
+          <Button 
             type="submit" 
-            style={{ 
-              width: '100%', padding: '12px', backgroundColor: '#720455', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px', transition: 'background-color 0.2s'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#910A67'} 
-            onMouseOut={(e) => e.target.style.backgroundColor = '#720455'}
+            className="w-full h-12 bg-[var(--accent)] text-[var(--on-accent)] hover:bg-[var(--accent-hover)] font-bold text-base mb-5 cursor-pointer"
           >
-            S'inscrire
-          </button>
+            Inscription
+          </Button>
         </form>
 
-        <div style={{ textAlign: 'center', fontSize: '14px', color: '#e0e0e0' }}>
+        <div className="text-center text-sm text-[var(--ink-muted)]">
           Déjà un compte ?{' '}
           <a 
             href="#" 
             onClick={(e) => { e.preventDefault(); onNavigateToLogin(); }}
-            style={{ color: '#910A67', textDecoration: 'none', fontWeight: '600', transition: 'color 0.2s' }}
-            onMouseOver={(e) => e.target.style.color = '#ffffff'} 
-            onMouseOut={(e) => e.target.style.color = '#910A67'}
+            className="text-[var(--accent)] no-underline font-semibold transition-colors duration-200 hover:text-[var(--accent-hover)]"
           >
             Se connecter
           </a>
