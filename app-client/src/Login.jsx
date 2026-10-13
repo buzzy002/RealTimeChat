@@ -6,7 +6,6 @@ function Login({ onLoginSuccess, onNavigateToRegister }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Tentative de connexion avec :", email, password);
     if (email && password) {
       onLoginSuccess();
     }
@@ -18,52 +17,28 @@ function Login({ onLoginSuccess, onNavigateToRegister }) {
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh', 
-      backgroundColor: '#030637', 
-      fontFamily: 'sans-serif' 
-    }}>
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '400px', 
-        padding: '40px 30px', 
-        backgroundColor: '#3C0753', 
-        borderRadius: '12px', 
-        boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-        color: '#ffffff'
-      }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#ffffff', fontWeight: '600' }}>
-          Interface de connexion 
+    <div className="flex justify-center items-center h-screen bg-[var(--bg)] text-[var(--ink)] font-sans">
+      <div className="w-full max-w-[400px] p-10 px-8 bg-[var(--surface)] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.3)] border border-[var(--line)]">
+        <h2 className="text-center mb-[30px] text-[var(--ink)] font-semibold text-2xl">
+          Connexion
         </h2>
         
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#e0e0e0', fontSize: '14px' }}>
-              Email professionnel
+          <div className="mb-5">
+            <label className="block mb-2 text-[var(--ink-muted)] text-sm">
+              Email 
             </label>
             <input 
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
-              style={{ 
-                width: '100%', 
-                padding: '12px', 
-                borderRadius: '6px', 
-                border: '1px solid #720455', 
-                backgroundColor: '#030637', 
-                color: '#ffffff',
-                boxSizing: 'border-box',
-                outline: 'none'
-              }}
+              className="w-full p-3 rounded-md border border-[var(--line-strong)] bg-[var(--bg)] text-[var(--ink)] box-border outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all"
             />
           </div>
 
-          <div style={{ marginBottom: '25px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#e0e0e0', fontSize: '14px' }}>
+          <div className="mb-[25px]">
+            <label className="block mb-2 text-[var(--ink-muted)] text-sm">
               Mot de passe
             </label>
             <input 
@@ -71,54 +46,24 @@ function Login({ onLoginSuccess, onNavigateToRegister }) {
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               required 
-              style={{ 
-                width: '100%', 
-                padding: '12px', 
-                borderRadius: '6px', 
-                border: '1px solid #720455', 
-                backgroundColor: '#030637', 
-                color: '#ffffff',
-                boxSizing: 'border-box',
-                outline: 'none'
-              }}
+              className="w-full p-3 rounded-md border border-[var(--line-strong)] bg-[var(--bg)] text-[var(--ink)] box-border outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all"
             />
           </div>
 
           <button 
             type="submit" 
-            style={{ 
-              width: '100%', 
-              padding: '12px', 
-              backgroundColor: '#720455', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '6px', 
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              marginBottom: '20px',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#910A67'} 
-            onMouseOut={(e) => e.target.style.backgroundColor = '#720455'}
+            className="w-full p-3 bg-[var(--accent)] text-[var(--on-accent)] border-none rounded-md text-base font-bold cursor-pointer mb-5 transition-colors duration-200 hover:bg-[var(--accent-hover)]"
           >
             Se connecter
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', fontSize: '14px', color: '#e0e0e0' }}>
+        <div className="text-center text-sm text-[var(--ink-muted)]">
           Vous n'avez pas de compte ?{' '}
           <a 
             href="#" 
             onClick={handleRegisterClick}
-            style={{ 
-              color: '#910A67', 
-              textDecoration: 'none', 
-              fontWeight: '600',
-              transition: 'color 0.2s'
-            }}
-            onMouseOver={(e) => e.target.style.color = '#ffffff'} 
-            onMouseOut={(e) => e.target.style.color = '#910A67'}
+            className="text-[var(--accent)] no-underline font-semibold transition-colors duration-200 hover:text-[var(--accent-hover)]"
           >
             Cliquez ici
           </a>
