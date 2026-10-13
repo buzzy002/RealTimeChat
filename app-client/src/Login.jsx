@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react'; 
+import { Button } from '@/components/ui/button';
+
 
 function Login({ onLoginSuccess, onNavigateToRegister }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
+  
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -15,6 +21,14 @@ function Login({ onLoginSuccess, onNavigateToRegister }) {
     e.preventDefault();
     onNavigateToRegister();
   };
+
+  const toggleVisibility = () => {
+    setShowPassword(prev => !prev);
+  };
+
+  
+  const inputClass = "w-full p-3 pr-12 rounded-md border border-[var(--line-strong)] bg-[var(--bg)] text-[var(--ink)] box-border outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all";
+  const iconClass = "absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--ink-muted)] cursor-pointer hover:text-[var(--ink)] transition-colors";
 
   return (
     <div className="flex justify-center items-center h-screen bg-[var(--bg)] text-[var(--ink)] font-sans">
@@ -33,7 +47,7 @@ function Login({ onLoginSuccess, onNavigateToRegister }) {
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
-              className="w-full p-3 rounded-md border border-[var(--line-strong)] bg-[var(--bg)] text-[var(--ink)] box-border outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all"
+              className={inputClass}
             />
           </div>
 
@@ -41,13 +55,24 @@ function Login({ onLoginSuccess, onNavigateToRegister }) {
             <label className="block mb-2 text-[var(--ink-muted)] text-sm">
               Mot de passe
             </label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              required 
-              className="w-full p-3 rounded-md border border-[var(--line-strong)] bg-[var(--bg)] text-[var(--ink)] box-border outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all"
-            />
+            
+            
+            <div className="relative w-full">
+              <input 
+                type={showPassword ? "text" : "password"} // Le type change dynamiquement
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+                className={inputClass}
+              />
+              
+              {/* Icône œil cliquable */}
+              {showPassword ? (
+                <EyeOff onClick={toggleVisibility} className={iconClass} />
+              ) : (
+                <Eye onClick={toggleVisibility} className={iconClass} />
+              )}
+            </div>
           </div>
 
           <button 
@@ -72,6 +97,7 @@ function Login({ onLoginSuccess, onNavigateToRegister }) {
       </div>
     </div>
   );
+  
 }
 
 export default Login;
