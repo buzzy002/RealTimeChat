@@ -1,3 +1,18 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+
+
+:root {
+  --bg : #0D0B22;
+  --surface : #17133A;
+  --surface-raised : #241E58;
+  --accent : #A78BFA;
+  --accent-hover : #B8A0FB;
+  --ink : #F5F3FF;
+  --ink-muted : #B4AFD8;
+  --line:rgba(255, 255, 255, 0.8);
+  --line-strong: rgba(255, 255, 255, 0.35);
+  --accent-tint: rgba(167, 139, 250, 0.18);
+  --on-accent: #0D0B22;
+}   
