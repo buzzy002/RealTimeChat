@@ -1,18 +1,19 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-# 1. AUTHENTIFICATION
+# AUTHENTIFICATION
 class User(AbstractUser):
     pass
 
-# 2. STRUCTURE B2B & ORGANISATIONS
+# STRUCTURE B2B & ORGANISATIONS
 class Workspace(models.Model):
     name = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
-
+    
+# Espace de travail (Workspace) pour les organisations avec leurs roles
 class WorkspaceMembership(models.Model):
     """Liaison sécurisée entre un utilisateur et un Workspace avec un rôle précis"""
     ROLE_CHOICES = (
@@ -25,12 +26,15 @@ class WorkspaceMembership(models.Model):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
     joined_at = models.DateTimeField(auto_now_add=True)
 
+# Nom unique pour eviter les doublons dans le même workspace
     class Meta:
         unique_together = ('user', 'workspace') 
 
     def __str__(self):
         return f"{self.user.username} ({self.role}) dans {self.workspace.name}"
 
+    
+# Informations de profil globales (avatar, statut)
 class UserProfile(models.Model):
     """Informations de profil globales (avatar, statut)"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -40,7 +44,7 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"Profil de {self.user.username}"
 
-# 3. CANAUX DE DISCUSSIONS
+# CANAUX DE DISCUSSIONS
 class Channel(models.Model):
     name = models.CharField(max_length=100)
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='channels')
