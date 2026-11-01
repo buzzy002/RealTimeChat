@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react'; 
 import { Button } from "@/components/ui/button";
+import { api, errorMessages } from './api';
 
 function Register({ onRegisterSuccess, onNavigateToLogin }) {
   const [username, setUsername] = useState('');
@@ -8,16 +9,30 @@ function Register({ onRegisterSuccess, onNavigateToLogin }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const [errors, setErrors] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrors([]);
     if (password !== confirmPassword) {
-      alert("Les mots de passe ne correspondent pas !");
+      setErrors(['Passwords do not match.']);
       return;
     }
-    onRegisterSuccess();
+    setLoading(true);
+    const { ok, data } = await api('/auth/register/', {
+      method: 'POST',
+      body: { username, email, password1: password, password2: confirmPassword },
+    });
+    setLoading(false);
+    if (ok) {
+      onRegisterSuccess(data.user);
+    } else {
+      setErrors(errorMessages(data));
+    }
   };
 
   const toggleVisibility = (setter) => {
@@ -102,11 +117,18 @@ function Register({ onRegisterSuccess, onNavigateToLogin }) {
             </div>
           </div>
 
+          {errors.length > 0 && 
+            <ul role="alert" 
+              className="mb-4 pl-5 list-disc text-sm text-red-300">
+              {errors.map((msg) => <li key={msg}>{msg}</li>)}
+            </ul>
+          }
+
           {/* Utilisation du Button Shadcn */}
           <Button 
             type="submit" 
             className="w-full h-12 bg-[var(--accent)] text-[var(--on-accent)] hover:bg-[var(--accent-hover)] font-bold text-base mb-5 cursor-pointer"
-          >
+            disabled={loading}>
             Inscription
           </Button>
         </form>
