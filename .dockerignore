@@ -1,0 +1,11 @@
+.git
+**/node_modules
+app-client/dist
+**/__pycache__
+**/*.sqlite3
+**/.env
+**/.venv
+**/venv
+RealTimeChat/staticfiles
+RealTimeChat/frontend
+RealTimeChat/media
