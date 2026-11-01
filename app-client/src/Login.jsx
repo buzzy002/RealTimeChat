@@ -1,19 +1,31 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
+import { api, errorMessages } from './api';
 
 
 function Login({ onLoginSuccess, onNavigateToRegister }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   
   
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email && password) {
-      onLoginSuccess();
+    setError('');
+    setLoading(true);
+    const { ok, data } = await api('/auth/login/', {
+      method: 'POST',
+      body: { username, password },
+    });
+    setLoading(false);
+    if (ok) {
+      onLoginSuccess(data.user);
+    } else {
+      setError(errorMessages(data).join(' '));
     }
   };
 
@@ -40,12 +52,13 @@ function Login({ onLoginSuccess, onNavigateToRegister }) {
         <form onSubmit={handleSubmit}>
           <div className="mb-5">
             <label className="block mb-2 text-[var(--ink-muted)] text-sm">
-              Email 
+              Username 
             </label>
             <input 
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
+              type="text" 
+              autoComplete="username"
+              value={username} 
+              onChange={(e) => setUsername(e.target.value)} 
               required 
               className={inputClass}
             />
@@ -60,6 +73,7 @@ function Login({ onLoginSuccess, onNavigateToRegister }) {
             <div className="relative w-full">
               <input 
                 type={showPassword ? "text" : "password"} // Le type change dynamiquement
+                autoComplete="current-password"
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
@@ -75,11 +89,17 @@ function Login({ onLoginSuccess, onNavigateToRegister }) {
             </div>
           </div>
 
+          {error && 
+            <p role="alert" className="mb-4 text-sm text-red-300">
+              {error}
+            </p>
+          }
+
           <button 
             type="submit" 
             className="w-full p-3 bg-[var(--accent)] text-[var(--on-accent)] border-none rounded-md text-base font-bold cursor-pointer mb-5 transition-colors duration-200 hover:bg-[var(--accent-hover)]"
-          >
-            Se connecter
+            disabled={loading}>
+            {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
 
