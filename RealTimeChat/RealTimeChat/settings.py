@@ -152,6 +152,8 @@ MAILERS = {
     },
 }
 
+SILENCED_SYSTEM_CHECKS = ["mail.E001"]
+
 # Authentification
 
 AUTH_USER_MODEL = "accounts.User"
