@@ -52,6 +52,8 @@ class ChannelsApiTests(TestCase):
         names = [c["name"] for c in self.client.get("/api/channels/").json()["channels"]]
         self.assertEqual(names, ["general"])
 
+
+class CreateChannelApiTests(TestCase):
     def setUp(self):
         self.workspace = Workspace.objects.create(name="Team")
         self.user = User.objects.create_user("alice", password="x")
