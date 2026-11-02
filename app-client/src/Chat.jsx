@@ -1,15 +1,22 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Paperclip, Smile, Send } from 'lucide-react'; 
 
-function Chat({ onLogout }) {
-  const [messages, setMessages] = useState([
-    { id: 1, sender: 'Alice', text: 'Bonjour équipe ! Le projet Django avance bien.', time: '11:45' },
-    { id: 2, sender: 'Bob', text: 'Super, j’attaque l’intégration de la base de données de mon côté.', time: '11:47' }
-  ]);
+const CHANNEL_ID = 1;
+
+const toUi = (m) => ({
+  id: m.id,
+  sender: m.sender,
+  text: m.text,
+  time: new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
+})
+
+function Chat({ onLogout, user }) {
+  const [messages, setMessages] = useState([]);
+  const socketRef = useRef(null);
   const [inputText, setInputText] = useState('');
   const [activeChannel, setActiveChannel] = useState('général');
 
@@ -20,28 +27,48 @@ function Chat({ onLogout }) {
   // Liste des emojis populaires
   const popularEmojis = ["😀", "😂", "😍", "👍", "🔥", "🎉", "❤️", "✨", "🚀", "😎", "🙌", "💡", "💻", "☕", "👏", "🙏"];
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
+    useEffect(() => {
+      let retry;
+      let stopped = false;
 
-    const newMessage = {
-      id: messages.length + 1,
-      sender: 'Moi',
-      text: inputText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      const connect = () => {
+        const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws = new WebSocket(`${proto}://${window.location.host}/ws/channels/${CHANNEL_ID}/`);
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === 'history') setMessages(data.messages.map(toUi));
+          if (data.type === 'message') setMessages((prev) => [...prev, toUi(data.message)]);
+        };
+        ws.onclose = () => {
+          if (!stopped) retry = setTimeout(connect, 2000);
+        };
+        socketRef.current = ws;
+      };
+
+      connect();
+      return () => {
+        stopped = true;
+        clearTimeout(retry);
+        socketRef.current?.close();
+      };
+    }, []);
+
+    const handleSendMessage = (e) => {
+      e.preventDefault();
+      const text = inputText.trim();
+      const ws = socketRef.current;
+      if (!text || ws?.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ content: text }));
+      setInputText('');
+      setShowEmojiPicker(false);
     };
 
-    setMessages([...messages, newMessage]);
-    setInputText('');
-    setShowEmojiPicker(false); 
-  };
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      alert(`Fichier sélectionné : ${file.name}`);
-    }
-  };
+    const handleFileSelect = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        alert(`Fichier sélectionné : ${file.name}`);
+      }
+    };
 
   // Ajoute l'emoji cliqué dans le champ de texte
   const handleEmojiClick = (emoji) => {
@@ -102,14 +129,14 @@ function Chat({ onLogout }) {
               <div 
                 key={msg.id} 
                 className={`flex flex-col max-w-[70%] ${
-                  msg.sender === 'Moi' ? 'self-end items-end' : 'self-start items-start'
+                  msg.sender === user?.username ? 'self-end items-end' : 'self-start items-start'
                 }`}
               >
                 <span className="text-xs text-[var(--ink-muted)] mb-1">
                   {msg.sender} • {msg.time}
                 </span>
                 <div className={`px-4 py-2.5 rounded-2xl leading-relaxed text-sm shadow-sm ${
-                  msg.sender === 'Moi' 
+                  msg.sender === user?.username 
                     ? 'bg-[var(--accent)] text-[var(--on-accent)] rounded-tr-none font-medium' 
                     : 'bg-[var(--surface-raised)] text-[var(--ink)] rounded-tl-none'
                 }`}>

@@ -1,12 +1,15 @@
 import json
 
+from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
+from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
 from .forms import SignUpForm
+from .models import Channel, Workspace, WorkspaceMembership
 
 
 def _read_json(request):
@@ -49,6 +52,11 @@ def login_view(request):
     login(request, user)
     return JsonResponse({'user': _user_data(user)})
 
+def _join_default_workspace(user):
+    """Give a new user access to the default workspace and its 'general' channel."""
+    workspace, _ = Workspace.objects.get_or_create(name=settings.DEFAULT_WORKSPACE_NAME)
+    Channel.objects.get_or_create(name="general", workspace=workspace)
+    WorkspaceMembership.objects.get_or_create(user=user, workspace=workspace)
 
 @require_POST
 def register_view(request):
@@ -58,7 +66,9 @@ def register_view(request):
     form = SignUpForm(data)
     if not form.is_valid():
         return JsonResponse({'errors': form.errors.get_json_data()}, status=400)
-    user = form.save()
+    with transaction.atomic():
+        user = form.save()
+        _join_default_workspace(user)
     login(request, user)
     return JsonResponse({'user': _user_data(user)}, status=201)
 

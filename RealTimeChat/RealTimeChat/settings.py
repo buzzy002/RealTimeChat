@@ -81,6 +81,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'RealTimeChat.wsgi.application'
 ASGI_APPLICATION = "RealTimeChat.asgi.application"
 
+DEFAULT_WORKSPACE_NAME = os.environ.get("DJANGO_DEFAULT_WORKSPACE", "Demo")
 
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
