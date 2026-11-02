@@ -17,11 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from accounts.views import SignUpView, home
+from accounts import api
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
     path("accounts/signup/", SignUpView.as_view(), name="signup"),
     path("api/auth/", include("accounts.api_urls")),
+    path("api/channels/", api.channels_view, name="api-channels"),
     path("", home, name="home")
 ]

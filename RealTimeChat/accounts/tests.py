@@ -1,4 +1,5 @@
 from django.test import TestCase
+from .models import Channel, User, Workspace, WorkspaceMembership
 
 
 class AuthApiTests(TestCase):
@@ -35,3 +36,18 @@ class AuthApiTests(TestCase):
                 user__username="bob", workspace__name="Demo"
             ).exists()
         )
+
+class ChannelsApiTests(TestCase):
+    def test_anonymous_gets_401(self):
+        self.assertEqual(self.client.get("/api/channels/").status_code, 401)
+
+    def test_member_sees_only_their_channels(self):
+        mine = Workspace.objects.create(name="Mine")
+        other = Workspace.objects.create(name="Other")
+        Channel.objects.create(name="general", workspace=mine)
+        Channel.objects.create(name="secret", workspace=other)
+        user = User.objects.create_user("alice", password="x")
+        WorkspaceMembership.objects.create(user=user, workspace=mine)
+        self.client.force_login(user)
+        names = [c["name"] for c in self.client.get("/api/channels/").json()["channels"]]
+        self.assertEqual(names, ["general"])

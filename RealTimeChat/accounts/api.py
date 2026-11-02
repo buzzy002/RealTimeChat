@@ -77,3 +77,19 @@ def register_view(request):
 def logout_view(request):
     logout(request)
     return JsonResponse({'ok': True})
+
+@require_GET
+def channels_view(request):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {'errors': {'__all__': [{'message': 'Authentication required.', 'code': 'auth'}]}},
+            status=401,
+        )
+    channels = (
+        Channel.objects.filter(workspace__memberships__user=request.user)
+        .select_related('workspace')
+        .order_by('workspace__name', 'name')
+    )
+    return JsonResponse({'channels': [
+        {'id': c.id, 'name': c.name, 'workspace': c.workspace.name} for c in channels
+    ]})
