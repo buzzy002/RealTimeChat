@@ -41,7 +41,7 @@ function Landing({ onTry, onLogin }) {
           Channels for every topic, private messages for everything else, and notifications that tell you what you missed.
         </p>
         <Button onClick={onTry} className="mt-8 h-12 px-8 text-base font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--on-accent)] cursor-pointer">
-          Essayer maintenant
+          Try it now
         </Button>
       </section>
 
@@ -77,7 +77,7 @@ function Landing({ onTry, onLogin }) {
                 ))}
               </ul>
               <Button onClick={onTry} className="mt-6 w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--on-accent)] font-bold cursor-pointer">
-                Essayer maintenant
+                Try it now
               </Button>
             </div>
           ))}
