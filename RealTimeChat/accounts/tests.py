@@ -20,3 +20,18 @@ class AuthApiTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_register_joins_default_workspace(self):
+        self.client.post(
+            "/api/auth/register/",
+            {"username": "bob", "email": "bob@example.com",
+             "password1": "A-strong-password-42",
+             "password2": "A-strong-password-42"},
+            content_type="application/json",
+        )
+        from .models import WorkspaceMembership
+        self.assertTrue(
+            WorkspaceMembership.objects.filter(
+                user__username="bob", workspace__name="Demo"
+            ).exists()
+        )
