@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Paperclip, Smile, Send } from 'lucide-react'; 
-import { api } from './api';
+import { api, errorMessages } from './api';
 
 const toUi = (m) => ({
   id: m.id,
@@ -20,7 +20,11 @@ function Chat({ onLogout, user }) {
 
   const [channels, setChannels] = useState([]);
   const [channelId, setChannelId] = useState(null);
+  const [newChannel, setNewChannel] = useState('');
+  const [channelError, setChannelError] = useState('');
+
   const activeChannel = channels.find((c) => c.id === channelId)?.name ?? '';
+  const currentWorkspaceId = channels.find((c) => c.id === channelId)?.workspace_id ?? channels[0]?.workspace_id;
 
   // Sélecteur de fichiers et le panneau d'emojis
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -75,6 +79,22 @@ function Chat({ onLogout, user }) {
     setShowEmojiPicker(false);
   };
 
+  const handleCreateChannel = async (e) => {
+    e.preventDefault();
+    setChannelError('');
+    const { ok, data } = await api('/channels/', {
+      method: 'POST',
+      body: { name: newChannel, workspace_id: currentWorkspaceId },
+    });
+    if (ok) {
+      setChannels((prev) => [...prev, data.channel]);
+      setChannelId(data.channel.id);
+      setNewChannel('');
+    } else {
+      setChannelError(errorMessages(data).join(' '));
+    }
+  };
+
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -121,6 +141,22 @@ function Chat({ onLogout, user }) {
               </li>
             ))} 
           </ul>
+
+          {currentWorkspaceId && (
+            <form onSubmit={handleCreateChannel} className="mt-3 px-2.5">
+              <input
+                value={newChannel}
+                onChange={(e) => setNewChannel(e.target.value)}
+                placeholder="+ New channel"
+                maxLength={100}
+                aria-label="New channel name"
+                className="w-full px-3 py-2 rounded-md text-sm bg-[var(--surface-raised)] text-[var(--ink)] placeholder-[var(--ink-muted)]"
+              />
+              {channelError && (
+                <p role="alert" className="mt-1 text-xs text-red-300">{channelError}</p>
+              )}
+            </form>
+          )}
         </div>
 
         <div className="p-5 border-t border-[var(--line-strong)]">
