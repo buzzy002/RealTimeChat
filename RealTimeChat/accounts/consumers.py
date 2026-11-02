@@ -1,7 +1,7 @@
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
-from .models import Channel, Message
+from .models import Channel, Message, WorkspaceMembership
 
 
 def serialize(m):
@@ -39,6 +39,11 @@ class ChannelConsumer(AsyncJsonWebsocketConsumer):
         await self.channel_layer.group_send(
             self.group, {"type": "chat.message", "message": message}
         )
+        for user_id in await self.recipients():
+            await self.channel_layer.group_send(
+                f"user_{user_id}",
+                {"type": "notify", "channel_id": self.channel_id, "message": message},
+            )
 
     async def chat_message(self, event):
         await self.send_json({"type": "message", "message": event["message"]})
@@ -62,3 +67,36 @@ class ChannelConsumer(AsyncJsonWebsocketConsumer):
             channel_id=self.channel_id, sender=self.scope["user"], content=text
         )
         return serialize(m)
+
+    @database_sync_to_async
+    def recipients(self):
+        """Everyone who can read this channel, except the sender."""
+        channel = Channel.objects.get(id=self.channel_id)
+        if channel.is_direct:
+            ids = channel.members.values_list("id", flat=True)
+        else:
+            ids = WorkspaceMembership.objects.filter(
+                workspace_id=channel.workspace_id
+            ).values_list("user_id", flat=True)
+        return [i for i in ids if i != self.scope["user"].id]
+
+class NotificationConsumer(AsyncJsonWebsocketConsumer):
+    """One socket per browser tab, joined to the user's personal group."""
+
+    async def connect(self):
+        user = self.scope["user"]
+        if not user.is_authenticated:
+            await self.close()
+            return
+        self.group = f"user_{user.id}"
+        await self.channel_layer.group_add(self.group, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, code):
+        if hasattr(self, "group"):
+            await self.channel_layer.group_discard(self.group, self.channel_name)
+
+    async def notify(self, event):
+        await self.send_json(
+            {"type": "notify", "channel_id": event["channel_id"], "message": event["message"]}
+        )
