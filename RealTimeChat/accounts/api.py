@@ -1,4 +1,5 @@
 import json
+import re
 
 from django.conf import settings
 from django.contrib.auth import login, logout
@@ -6,7 +7,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from .forms import SignUpForm
 from .models import Channel, Workspace, WorkspaceMembership
@@ -78,18 +79,56 @@ def logout_view(request):
     logout(request)
     return JsonResponse({'ok': True})
 
-@require_GET
+def _error(message, code, status):
+    return JsonResponse({'errors': {'__all__': [{'message': message, 'code': code}]}}, status=status)
+
+
+def _channel_data(channel):
+    return {
+        'id': channel.id,
+        'name': channel.name,
+        'workspace': channel.workspace.name,
+        'workspace_id': channel.workspace_id,
+    }
+
+
+@require_http_methods(['GET', 'POST'])
 def channels_view(request):
     if not request.user.is_authenticated:
-        return JsonResponse(
-            {'errors': {'__all__': [{'message': 'Authentication required.', 'code': 'auth'}]}},
-            status=401,
+        return _error('Authentication required.', 'auth', 401)
+
+    if request.method == 'GET':
+        channels = (
+            Channel.objects.filter(workspace__memberships__user=request.user)
+            .select_related('workspace')
+            .order_by('workspace__name', 'name')
         )
-    channels = (
-        Channel.objects.filter(workspace__memberships__user=request.user)
+        return JsonResponse({'channels': [_channel_data(c) for c in channels]})
+
+    data = _read_json(request)
+    if data is None:
+        return _bad_json()
+
+    raw_name = str(data.get('name', '')).strip().lower()
+    name = re.sub(r'[^a-z0-9_-]+', '-', raw_name).strip('-')[:100]
+    if not name:
+        return _error('Channel name is required.', 'required', 400)
+
+    try:
+        workspace_id = int(data.get('workspace_id'))
+    except (TypeError, ValueError):
+        return _error('Invalid workspace.', 'invalid', 400)
+
+    membership = (
+        WorkspaceMembership.objects.filter(user=request.user, workspace_id=workspace_id)
+        .exclude(role='guest')
         .select_related('workspace')
-        .order_by('workspace__name', 'name')
+        .first()
     )
-    return JsonResponse({'channels': [
-        {'id': c.id, 'name': c.name, 'workspace': c.workspace.name} for c in channels
-    ]})
+    if membership is None:
+        return _error('You cannot create channels in this workspace.', 'forbidden', 403)
+
+    channel, created = Channel.objects.get_or_create(name=name, workspace=membership.workspace)
+    if not created:
+        return _error('A channel with this name already exists.', 'duplicate', 400)
+    return JsonResponse({'channel': _channel_data(channel)}, status=201)

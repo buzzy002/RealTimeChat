@@ -51,3 +51,31 @@ class ChannelsApiTests(TestCase):
         self.client.force_login(user)
         names = [c["name"] for c in self.client.get("/api/channels/").json()["channels"]]
         self.assertEqual(names, ["general"])
+
+
+class CreateChannelApiTests(TestCase):
+    def setUp(self):
+        self.workspace = Workspace.objects.create(name="Team")
+        self.user = User.objects.create_user("alice", password="x")
+        WorkspaceMembership.objects.create(user=self.user, workspace=self.workspace)
+        self.client.force_login(self.user)
+
+    def create(self, name, workspace_id=None):
+        return self.client.post(
+            "/api/channels/",
+            {"name": name, "workspace_id": workspace_id or self.workspace.id},
+            content_type="application/json",
+        )
+
+    def test_member_creates_a_normalized_channel(self):
+        response = self.create("My Channel !")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["channel"]["name"], "my-channel")
+
+    def test_duplicate_name_is_rejected(self):
+        self.create("general")
+        self.assertEqual(self.create("General").status_code, 400)
+
+    def test_cannot_create_in_another_workspace(self):
+        other = Workspace.objects.create(name="Other")
+        self.assertEqual(self.create("secret", other.id).status_code, 403)
