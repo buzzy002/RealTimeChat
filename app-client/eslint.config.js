@@ -17,6 +17,18 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
-    rules: ["error", { "allow": ["warn","error" ] }],
+    rules: {
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    // shadcn/ui components export helpers (e.g. buttonVariants) next to the component
+    files: ['src/components/ui/**/*.{js,jsx}'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+  {
+    // Config files run in Node, not in the browser
+    files: ['*.config.js'],
+    languageOptions: { globals: globals.node },
   },
 ])
