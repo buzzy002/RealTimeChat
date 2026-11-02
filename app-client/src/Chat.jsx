@@ -13,6 +13,13 @@ const toUi = (m) => ({
   time: new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
 })
 
+const UnreadBadge = ({ count }) =>
+  count > 0 ? (
+    <span className="min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+      {count > 99 ? '99+' : count}
+    </span>
+  ) : null;
+
 function Chat({ onLogout, user }) {
 
   const [messages, setMessages] = useState([]);
@@ -30,6 +37,19 @@ function Chat({ onLogout, user }) {
   const active = channels.find((c) => c.id === channelId);
   const activeLabel = !active ? '' : active.is_direct ? `@${active.name}` : `#${active.name}`;
   const currentWorkspaceId = channels.find((c) => c.id === channelId)?.workspace_id ?? channels[0]?.workspace_id;
+  const channelIdRef = useRef(null);
+  const channelsRef = useRef([]);
+  useEffect(() => {
+    channelIdRef.current = channelId;
+    channelsRef.current = channels;
+  });
+  const refreshChannels = () =>
+  api('/channels/').then(({ ok, data }) => {
+    if (ok) setChannels(data.channels);
+  });
+
+  const [unread, setUnread] = useState({});
+  const [toast, setToast] = useState(null);
 
   // Sélecteur de fichiers et le panneau d'emojis
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -57,6 +77,7 @@ function Chat({ onLogout, user }) {
     const connect = () => {
       if (channelId === null) return;
       setMessages([]);
+      setUnread((prev) => ({ ...prev, [channelId]: 0 }));
       const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
       const ws = new WebSocket(`${proto}://${window.location.host}/ws/channels/${channelId}/`);
       ws.onmessage = (event) => {
@@ -77,6 +98,57 @@ function Chat({ onLogout, user }) {
       socketRef.current?.close();
     };
   }, [channelId]);
+
+  useEffect(() => {
+    let retry;
+    let stopped = false;
+    let socket;
+
+    const connect = () => {
+      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      socket = new WebSocket(`${proto}://${window.location.host}/ws/notifications/`);
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type !== 'notify' || data.channel_id === channelIdRef.current) return;
+
+        setUnread((prev) => ({ ...prev, [data.channel_id]: (prev[data.channel_id] ?? 0) + 1 }));
+
+        const known = channelsRef.current.find((c) => c.id === data.channel_id);
+        if (!known) refreshChannels(); // a new channel, or a first direct message
+        const sender = data.message.sender;
+        setToast({
+          channelId: data.channel_id,
+          title: !known
+            ? `New message from ${sender}`
+            : known.is_direct
+              ? `${sender} (direct message)`
+              : `${sender} in #${known.name}`,
+          text: data.message.text,
+        });
+      };
+      socket.onclose = () => {
+        if (!stopped) retry = setTimeout(connect, 2000);
+      };
+    };
+
+    connect();
+    return () => {
+      stopped = true;
+      clearTimeout(retry);
+      socket?.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  const totalUnread = Object.values(unread).reduce((sum, n) => sum + n, 0);
+  useEffect(() => {
+    document.title = totalUnread > 0 ? `(${totalUnread}) RealTimeChat` : 'RealTimeChat';
+  }, [totalUnread]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -163,6 +235,7 @@ function Chat({ onLogout, user }) {
                   }`}
                 >
                   <span># {channel.name}</span>
+                  <UnreadBadge count={unread[channel.id]} />
                 </li>
               ))}
             </ul>
@@ -184,7 +257,6 @@ function Chat({ onLogout, user }) {
             )}
           </div>
 
-          {/* Direct messages (layout from dev2's mock-up) */}
           <div>
             <p className="text-xs text-[var(--ink-muted)] uppercase tracking-widest pl-2.5 mb-2 font-semibold">Direct messages</p>
             <ul className="list-none p-0 m-0 space-y-1">
@@ -205,6 +277,7 @@ function Chat({ onLogout, user }) {
                     }`}
                   >
                     <span>@ {u.username}</span>
+                    <UnreadBadge count={dm ? unread[dm.id] : 0} />
                   </li>
                 );
               })}
@@ -323,6 +396,17 @@ function Chat({ onLogout, user }) {
         </div>
 
       </div>
+
+      {toast && (
+        <button
+          type="button"
+          onClick={() => { setChannelId(toast.channelId); setToast(null); }}
+          className="fixed bottom-24 right-4 z-50 max-w-xs text-left p-4 rounded-xl shadow-2xl bg-[var(--surface)] border border-[var(--line-strong)] cursor-pointer"
+        >
+          <p className="m-0 text-xs font-semibold text-[var(--ink-muted)]">{toast.title}</p>
+          <p className="m-0 mt-1 text-sm text-[var(--ink)] line-clamp-2">{toast.text}</p>
+        </button>
+      )}
 
     </div>
   );
