@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Landing from './Landing';
 import Login from './Login';
 import Register from './Register';
 import Chat from './Chat';
@@ -14,7 +15,7 @@ function App() {
         setUser(data.user);
         setScreen('chat');
       } else {
-        setScreen('login');
+        setScreen('landing');
       }
     });
   }, []);
@@ -27,13 +28,17 @@ function App() {
   const handleLogout = async () => {
     await api('/auth/logout/', { method: 'POST' });
     setUser(null);
-    setScreen('login');
+    setScreen('landing');
   };
 
   if (screen === 'loading') return null;
 
   return (
     <div>
+      {screen === 'landing' && (
+        <Landing onTry={() => setScreen('register')} onLogin={() => setScreen('login')} />
+      )}
+
       {screen === 'login' && (
         <Login
           onLoginSuccess={handleAuthenticated}
