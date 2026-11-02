@@ -25,5 +25,7 @@ urlpatterns = [
     path("accounts/signup/", SignUpView.as_view(), name="signup"),
     path("api/auth/", include("accounts.api_urls")),
     path("api/channels/", api.channels_view, name="api-channels"),
+    path("api/users/", api.users_view, name="api-users"),
+    path("api/dms/", api.open_dm_view, name="api-dms"),
     path("", home, name="home")
 ]

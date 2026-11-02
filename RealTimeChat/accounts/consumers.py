@@ -45,9 +45,7 @@ class ChannelConsumer(AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def can_access(self, user):
-        return Channel.objects.filter(
-            id=self.channel_id, workspace__memberships__user=user
-        ).exists()
+        return Channel.objects.visible_to(user).filter(id=self.channel_id).exists()
 
     @database_sync_to_async
     def history(self):
