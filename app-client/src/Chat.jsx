@@ -3,7 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Paperclip, Smile, Send } from 'lucide-react'; 
+import { Paperclip, Smile, Send, Menu } from 'lucide-react'; 
 import { api, errorMessages } from './api';
 
 const toUi = (m) => ({
@@ -50,6 +50,8 @@ function Chat({ onLogout, user }) {
 
   const [unread, setUnread] = useState({});
   const [toast, setToast] = useState(null);
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Sélecteur de fichiers et le panneau d'emojis
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -161,6 +163,7 @@ function Chat({ onLogout, user }) {
   };
 
   const openDirect = async (other) => {
+    setSidebarOpen(false);
     const existing = directChannels.find((c) => c.name === other.username);
     if (existing) {
       setChannelId(existing.id);
@@ -206,10 +209,15 @@ function Chat({ onLogout, user }) {
   const inputIconClass = "h-5 w-5 text-[var(--ink-muted)] cursor-pointer hover:text-[var(--ink)] transition-colors";
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[var(--bg)] text-[var(--ink)] font-sans">
+    <div className="flex h-dvh w-full overflow-hidden bg-[var(--bg)] text-[var(--ink)] font-sans">
       
       {/* 1. BARRE LATÉRALE */}
-      <div className="w-[260px] bg-[var(--surface)] flex flex-col border-r border-[var(--line-strong)]">
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+      <div className={`fixed inset-y-0 left-0 z-40 w-[260px] bg-[var(--surface)] flex flex-col border-r border-[var(--line-strong)] transition-transform duration-200 md:static md:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
         <div className="p-5 border-b border-[var(--line-strong)]">
           <h2 className="m-0 text-lg font-bold tracking-wide text-[var(--ink)]">Espace B2B</h2>
         </div>
@@ -227,7 +235,7 @@ function Chat({ onLogout, user }) {
               {groupChannels.map((channel) => (
                 <li
                   key={channel.id}
-                  onClick={() => setChannelId(channel.id)}
+                  onClick={() => { setChannelId(channel.id); setSidebarOpen(false); }}
                   className={`px-3 py-2 rounded-md cursor-pointer text-sm transition-colors flex items-center justify-between ${
                     channelId === channel.id
                       ? "bg-[var(--accent)] font-bold text-[var(--on-accent)] shadow-sm"
@@ -297,9 +305,16 @@ function Chat({ onLogout, user }) {
       </div>
 
       {/* 2. ZONE DE DISCUSSION PRINCIPALE */}
-      <div className="flex-1 flex flex-col h-full bg-[var(--bg)]">
-        <div className="p-5 border-b border-[var(--line-strong)] flex items-center shadow-sm">
-          <h3 className="m-0 text-lg font-semibold tracking-wide text-[var(--ink)]">{activeLabel}</h3>
+      <div className="flex-1 flex flex-col h-full min-w-0 bg-[var(--bg)]">
+        <div className="p-3 md:p-5 border-b border-[var(--line-strong)] flex items-center gap-3 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden text-[var(--ink-muted)] hover:text-[var(--ink)]"
+            aria-label="Open menu">
+            <Menu className="h-5 w-5" />
+          </button>
+          <h3 className="m-0 text-lg font-semibold tracking-wide text-[var(--ink)] truncate">{activeLabel}</h3>
         </div>
 
         <ScrollArea className="flex-1 p-5">
@@ -400,7 +415,7 @@ function Chat({ onLogout, user }) {
       {toast && (
         <button
           type="button"
-          onClick={() => { setChannelId(toast.channelId); setToast(null); }}
+          onClick={() => { setChannelId(toast.channelId); setToast(null); setSidebarOpen(false); }}
           className="fixed bottom-24 right-4 z-50 max-w-xs text-left p-4 rounded-xl shadow-2xl bg-[var(--surface)] border border-[var(--line-strong)] cursor-pointer"
         >
           <p className="m-0 text-xs font-semibold text-[var(--ink-muted)]">{toast.title}</p>

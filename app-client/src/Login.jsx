@@ -43,7 +43,7 @@ function Login({ onLoginSuccess, onNavigateToRegister }) {
   const iconClass = "absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--ink-muted)] cursor-pointer hover:text-[var(--ink)] transition-colors";
 
   return (
-    <div className="flex justify-center items-center h-screen bg-[var(--bg)] text-[var(--ink)] font-sans">
+    <div className="flex justify-center items-center min-h-dvh px-4 bg-[var(--bg)] text-[var(--ink)] font-sans">
       <div className="w-full max-w-[400px] p-10 px-8 bg-[var(--surface)] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.3)] border border-[var(--line)]">
         <h2 className="text-center mb-[30px] text-[var(--ink)] font-semibold text-2xl">
           Connexion
