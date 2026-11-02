@@ -24,7 +24,7 @@ def _read_json(request):
 
 def _bad_json():
     return JsonResponse(
-        {'errors': {'__all__': [{'message': 'Requête invalide.', 'code': 'invalid'}]}},
+        {'errors': {'__all__': [{'message': 'Invalid request.', 'code': 'invalid'}]}},
         status=400,
     )
 

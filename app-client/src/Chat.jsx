@@ -196,7 +196,7 @@ function Chat({ onLogout, user }) {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      alert(`Fichier sélectionné : ${file.name}`);
+      alert(`File sharing : coming soon.`);
     }
   };
 
@@ -219,7 +219,7 @@ function Chat({ onLogout, user }) {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
         <div className="p-5 border-b border-[var(--line-strong)]">
-          <h2 className="m-0 text-lg font-bold tracking-wide text-[var(--ink)]">Espace B2B</h2>
+          <h2 className="m-0 text-lg font-bold tracking-wide text-[var(--ink)]">RealTimeChat</h2>
         </div>
         
         <div className="flex-1 px-2.5 py-4 overflow-y-auto space-y-6">
@@ -299,7 +299,7 @@ function Chat({ onLogout, user }) {
             variant="outline"
             className="w-full bg-transparent text-[var(--ink)] border-[var(--line-strong)] hover:bg-[var(--surface-raised)] hover:text-[var(--ink)] transition-colors font-semibold cursor-pointer"
           >
-            Se déconnecter
+            Log out
           </Button>
         </div>
       </div>
@@ -377,7 +377,7 @@ function Chat({ onLogout, user }) {
                 <Smile 
                   onClick={() => setShowEmojiPicker(prev => !prev)} 
                   className={inputIconClass} 
-                  title="Choisir un emoji"
+                  title="Insert emoji"
                 />                
               </div>
 
@@ -394,7 +394,7 @@ function Chat({ onLogout, user }) {
               <Paperclip 
                 onClick={() => fileInputRef.current.click()} 
                 className={`absolute right-4 top-1/2 -translate-y-1/2 ${inputIconClass}`} 
-                title="Joindre un fichier"
+                title="Attach a file"
               />
               
             </div>
@@ -405,7 +405,7 @@ function Chat({ onLogout, user }) {
               className="h-11 px-6 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--on-accent)] font-bold rounded-lg transition-all cursor-pointer flex items-center"
             >
               <Send className="h-5 w-5" />
-              <span className="ml-2 hidden sm:inline">Envoyer</span>
+              <span className="ml-2 hidden sm:inline">Send</span>
             </Button>
           </form>
         </div>

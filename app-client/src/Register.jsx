@@ -47,13 +47,13 @@ function Register({ onRegisterSuccess, onNavigateToLogin }) {
     <div className="flex justify-center items-center min-h-dvh px-4 bg-[var(--bg)] text-[var(--ink)] font-sans">
       <div className="w-full max-w-[400px] p-10 px-8 bg-[var(--surface)] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.3)] border border-[var(--line-strong)]">
         <h2 className="text-center mb-[25px] text-[var(--ink)] font-semibold text-2xl">
-          Nouveau membre
+          Create your account
         </h2>
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block mb-1.5 text-[var(--ink-muted)] text-sm">
-              Nom d'utilisateur
+              Username
             </label>
             <input 
               type="text" 
@@ -79,7 +79,7 @@ function Register({ onRegisterSuccess, onNavigateToLogin }) {
 
           <div className="mb-4">
             <label className="block mb-1.5 text-[var(--ink-muted)] text-sm">
-              Mot de passe
+              Password
             </label>
             <div className={inputWrapperClass}>
               <input 
@@ -99,7 +99,7 @@ function Register({ onRegisterSuccess, onNavigateToLogin }) {
 
           <div className="mb-6">
             <label className="block mb-1.5 text-[var(--ink-muted)] text-sm">
-              Répéter le mot de passe
+              Confirm password
             </label>
             <div className={inputWrapperClass}>
               <input 
@@ -129,18 +129,18 @@ function Register({ onRegisterSuccess, onNavigateToLogin }) {
             type="submit" 
             className="w-full h-12 bg-[var(--accent)] text-[var(--on-accent)] hover:bg-[var(--accent-hover)] font-bold text-base mb-5 cursor-pointer"
             disabled={loading}>
-            Inscription
+            Sign up
           </Button>
         </form>
 
         <div className="text-center text-sm text-[var(--ink-muted)]">
-          Déjà un compte ?{' '}
+          Already have an account ?{' '}
           <a 
             href="#" 
             onClick={(e) => { e.preventDefault(); onNavigateToLogin(); }}
             className="text-[var(--accent)] no-underline font-semibold transition-colors duration-200 hover:text-[var(--accent-hover)]"
           >
-            Se connecter
+            Log in
           </a>
         </div>
       </div>
