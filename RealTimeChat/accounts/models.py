@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Q
 
 # 1. AUTHENTIFICATION
 class User(AbstractUser):
@@ -41,11 +42,23 @@ class UserProfile(models.Model):
         return f"Profil de {self.user.username}"
 
 # 3. CANAUX DE DISCUSSIONS
+class ChannelQuerySet(models.QuerySet):
+    def visible_to(self, user):
+        """Channels this user may read: workspace channels, plus their own direct conversations."""
+        return self.filter(
+            Q(is_direct=False, workspace__in=user.memberships.values("workspace"))
+            | Q(is_direct=True, id__in=user.direct_channels.values("id"))
+        )
+
 class Channel(models.Model):
     name = models.CharField(max_length=100)
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='channels')
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_direct = models.BooleanField(default=False)
+    members = models.ManyToManyField(User, blank=True, related_name="direct_channels")
+
+    objects = ChannelQuerySet.as_manager()
 
     def __str__(self):
         return f"#{self.name} [{self.workspace.name}]"
@@ -64,18 +77,6 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.sender.username} dans #{self.channel.name}"
-
-# MESSAGES PRIVÉS (1-to-1)
-class DirectMessage(models.Model):
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_dms')
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_dms')
-    content = models.TextField()
-    file = models.FileField(upload_to='dm_files/', blank=True, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"DM: {self.sender.username} -> {self.receiver.username}"
 
 # RÉACTIONS AUX MESSAGES (Émojis)
 class MessageReaction(models.Model):
