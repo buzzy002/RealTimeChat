@@ -4,8 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Paperclip, Smile, Send } from 'lucide-react'; 
-
-const CHANNEL_ID = 1;
+import { api } from './api';
 
 const toUi = (m) => ({
   id: m.id,
@@ -18,7 +17,10 @@ function Chat({ onLogout, user }) {
   const [messages, setMessages] = useState([]);
   const socketRef = useRef(null);
   const [inputText, setInputText] = useState('');
-  const [activeChannel, setActiveChannel] = useState('général');
+
+  const [channels, setChannels] = useState([]);
+  const [channelId, setChannelId] = useState(null);
+  const activeChannel = channels.find((c) => c.id === channelId)?.name ?? '';
 
   // Sélecteur de fichiers et le panneau d'emojis
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -27,48 +29,58 @@ function Chat({ onLogout, user }) {
   // Liste des emojis populaires
   const popularEmojis = ["😀", "😂", "😍", "👍", "🔥", "🎉", "❤️", "✨", "🚀", "😎", "🙌", "💡", "💻", "☕", "👏", "🙏"];
 
-    useEffect(() => {
-      let retry;
-      let stopped = false;
+  useEffect(() => {
+    api('/channels/').then(({ ok, data }) => {
+      if (!ok) return;
+      setChannels(data.channels);
+      setChannelId(data.channels[0]?.id ?? null);
+    });
+  }, []);
 
-      const connect = () => {
-        const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        const ws = new WebSocket(`${proto}://${window.location.host}/ws/channels/${CHANNEL_ID}/`);
-        ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          if (data.type === 'history') setMessages(data.messages.map(toUi));
-          if (data.type === 'message') setMessages((prev) => [...prev, toUi(data.message)]);
-        };
-        ws.onclose = () => {
-          if (!stopped) retry = setTimeout(connect, 2000);
-        };
-        socketRef.current = ws;
+  useEffect(() => {
+    let retry;
+    let stopped = false;
+
+    const connect = () => {
+      if (channelId === null) return;
+      setMessages([]);
+      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const ws = new WebSocket(`${proto}://${window.location.host}/ws/channels/${channelId}/`);
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'history') setMessages(data.messages.map(toUi));
+        if (data.type === 'message') setMessages((prev) => [...prev, toUi(data.message)]);
       };
-
-      connect();
-      return () => {
-        stopped = true;
-        clearTimeout(retry);
-        socketRef.current?.close();
+      ws.onclose = () => {
+        if (!stopped) retry = setTimeout(connect, 2000);
       };
-    }, []);
-
-    const handleSendMessage = (e) => {
-      e.preventDefault();
-      const text = inputText.trim();
-      const ws = socketRef.current;
-      if (!text || ws?.readyState !== WebSocket.OPEN) return;
-      ws.send(JSON.stringify({ content: text }));
-      setInputText('');
-      setShowEmojiPicker(false);
+      socketRef.current = ws;
     };
 
-    const handleFileSelect = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        alert(`Fichier sélectionné : ${file.name}`);
-      }
+    connect();
+    return () => {
+      stopped = true;
+      clearTimeout(retry);
+      socketRef.current?.close();
     };
+  }, [channelId]);
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    const text = inputText.trim();
+    const ws = socketRef.current;
+    if (!text || ws?.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ content: text }));
+    setInputText('');
+    setShowEmojiPicker(false);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      alert(`Fichier sélectionné : ${file.name}`);
+    }
+  };
 
   // Ajoute l'emoji cliqué dans le champ de texte
   const handleEmojiClick = (emoji) => {
@@ -90,19 +102,24 @@ function Chat({ onLogout, user }) {
         <div className="flex-1 px-2.5 py-4">
           <p className="text-xs text-[var(--ink-muted)] uppercase tracking-widest pl-2.5 mb-2 font-semibold">Canaux</p>
           <ul className="list-none p-0 m-0 space-y-1">
-            {['général', 'technique', 'marketing'].map((channel) => (
-              <li 
-                key={channel}
-                onClick={() => setActiveChannel(channel)}
+            {channels.length === 0 && (
+              <li className="px-3 py-2 text-sm text-[var(--ink-muted)]">
+                No channels yet: ask an admin to add you to a workspace.
+              </li>
+            )}
+            {channels.map((channel) => (
+              <li
+                key={channel.id}
+                onClick={() => setChannelId(channel.id)}
                 className={`px-3 py-2 rounded-md cursor-pointer text-sm transition-colors ${
-                  activeChannel === channel 
-                    ? "bg-[var(--accent)] font-bold text-[var(--on-accent)] shadow-sm" 
+                  channelId === channel.id
+                    ? "bg-[var(--accent)] font-bold text-[var(--on-accent)] shadow-sm"
                     : "text-[var(--ink-muted)] hover:bg-[var(--surface-raised)] hover:text-[var(--ink)]"
                 }`}
               >
-                # {channel}
+                # {channel.name}
               </li>
-            ))}
+            ))} 
           </ul>
         </div>
 
