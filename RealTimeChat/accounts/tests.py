@@ -79,3 +79,40 @@ class CreateChannelApiTests(TestCase):
     def test_cannot_create_in_another_workspace(self):
         other = Workspace.objects.create(name="Other")
         self.assertEqual(self.create("secret", other.id).status_code, 403)
+
+class DirectMessagesApiTests(TestCase):
+    def setUp(self):
+        team = Workspace.objects.create(name="Team")
+        other = Workspace.objects.create(name="Other")
+        self.alice = User.objects.create_user("alice", password="x")
+        self.bob = User.objects.create_user("bob", password="x")
+        self.carol = User.objects.create_user("carol", password="x")  # same team, not in the DM
+        self.eve = User.objects.create_user("eve", password="x")  # another workspace
+        for user in (self.alice, self.bob, self.carol):
+            WorkspaceMembership.objects.create(user=user, workspace=team)
+        WorkspaceMembership.objects.create(user=self.eve, workspace=other)
+        self.client.force_login(self.alice)
+
+    def open_dm(self, user):
+        return self.client.post("/api/dms/", {"user_id": user.id}, content_type="application/json")
+
+    def test_colleagues_exclude_me_and_strangers(self):
+        names = [u["username"] for u in self.client.get("/api/users/").json()["users"]]
+        self.assertEqual(names, ["bob", "carol"])
+
+    def test_opening_twice_returns_the_same_conversation(self):
+        first = self.open_dm(self.bob)
+        second = self.open_dm(self.bob)
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(first.json()["channel"]["id"], second.json()["channel"]["id"])
+        self.assertEqual(first.json()["channel"]["name"], "bob")
+
+    def test_cannot_message_outside_my_workspaces(self):
+        self.assertEqual(self.open_dm(self.eve).status_code, 403)
+
+    def test_conversation_is_hidden_from_other_members(self):
+        dm_id = self.open_dm(self.bob).json()["channel"]["id"]
+        self.client.force_login(self.carol)
+        ids = [c["id"] for c in self.client.get("/api/channels/").json()["channels"]]
+        self.assertNotIn(dm_id, ids)

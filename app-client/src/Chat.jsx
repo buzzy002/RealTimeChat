@@ -14,6 +14,7 @@ const toUi = (m) => ({
 })
 
 function Chat({ onLogout, user }) {
+
   const [messages, setMessages] = useState([]);
   const socketRef = useRef(null);
   const [inputText, setInputText] = useState('');
@@ -23,7 +24,11 @@ function Chat({ onLogout, user }) {
   const [newChannel, setNewChannel] = useState('');
   const [channelError, setChannelError] = useState('');
 
-  const activeChannel = channels.find((c) => c.id === channelId)?.name ?? '';
+  const [users, setUsers] = useState([]);
+  const groupChannels = channels.filter((c) => !c.is_direct);
+  const directChannels = channels.filter((c) => c.is_direct);
+  const active = channels.find((c) => c.id === channelId);
+  const activeLabel = !active ? '' : active.is_direct ? `@${active.name}` : `#${active.name}`;
   const currentWorkspaceId = channels.find((c) => c.id === channelId)?.workspace_id ?? channels[0]?.workspace_id;
 
   // Sélecteur de fichiers et le panneau d'emojis
@@ -37,7 +42,11 @@ function Chat({ onLogout, user }) {
     api('/channels/').then(({ ok, data }) => {
       if (!ok) return;
       setChannels(data.channels);
-      setChannelId(data.channels[0]?.id ?? null);
+      const first = data.channels.find((c) => !c.is_direct) ?? data.channels[0];
+      setChannelId(first?.id ?? null);
+    });
+    api('/users/').then(({ ok, data }) => {
+      if (ok) setUsers(data.users);
     });
   }, []);
 
@@ -77,6 +86,20 @@ function Chat({ onLogout, user }) {
     ws.send(JSON.stringify({ content: text }));
     setInputText('');
     setShowEmojiPicker(false);
+  };
+
+  const openDirect = async (other) => {
+    const existing = directChannels.find((c) => c.name === other.username);
+    if (existing) {
+      setChannelId(existing.id);
+      return;
+    }
+    const { ok, data } = await api('/dms/', { method: 'POST', body: { user_id: other.id } });
+    if (!ok) return;
+    setChannels((prev) =>
+      prev.some((c) => c.id === data.channel.id) ? prev : [...prev, data.channel]
+    );
+    setChannelId(data.channel.id);
   };
 
   const handleCreateChannel = async (e) => {
@@ -119,44 +142,74 @@ function Chat({ onLogout, user }) {
           <h2 className="m-0 text-lg font-bold tracking-wide text-[var(--ink)]">Espace B2B</h2>
         </div>
         
-        <div className="flex-1 px-2.5 py-4">
-          <p className="text-xs text-[var(--ink-muted)] uppercase tracking-widest pl-2.5 mb-2 font-semibold">Canaux</p>
-          <ul className="list-none p-0 m-0 space-y-1">
-            {channels.length === 0 && (
-              <li className="px-3 py-2 text-sm text-[var(--ink-muted)]">
-                No channels yet: ask an admin to add you to a workspace.
-              </li>
-            )}
-            {channels.map((channel) => (
-              <li
-                key={channel.id}
-                onClick={() => setChannelId(channel.id)}
-                className={`px-3 py-2 rounded-md cursor-pointer text-sm transition-colors ${
-                  channelId === channel.id
-                    ? "bg-[var(--accent)] font-bold text-[var(--on-accent)] shadow-sm"
-                    : "text-[var(--ink-muted)] hover:bg-[var(--surface-raised)] hover:text-[var(--ink)]"
-                }`}
-              >
-                # {channel.name}
-              </li>
-            ))} 
-          </ul>
-
-          {currentWorkspaceId && (
-            <form onSubmit={handleCreateChannel} className="mt-3 px-2.5">
-              <input
-                value={newChannel}
-                onChange={(e) => setNewChannel(e.target.value)}
-                placeholder="+ New channel"
-                maxLength={100}
-                aria-label="New channel name"
-                className="w-full px-3 py-2 rounded-md text-sm bg-[var(--surface-raised)] text-[var(--ink)] placeholder-[var(--ink-muted)]"
-              />
-              {channelError && (
-                <p role="alert" className="mt-1 text-xs text-red-300">{channelError}</p>
+        <div className="flex-1 px-2.5 py-4 overflow-y-auto space-y-6">
+          {/* Group channels */}
+          <div>
+            <p className="text-xs text-[var(--ink-muted)] uppercase tracking-widest pl-2.5 mb-2 font-semibold">Channels</p>
+            <ul className="list-none p-0 m-0 space-y-1">
+              {groupChannels.length === 0 && (
+                <li className="px-3 py-2 text-sm text-[var(--ink-muted)]">
+                  No channels yet: ask an admin to add you to a workspace.
+                </li>
               )}
-            </form>
-          )}
+              {groupChannels.map((channel) => (
+                <li
+                  key={channel.id}
+                  onClick={() => setChannelId(channel.id)}
+                  className={`px-3 py-2 rounded-md cursor-pointer text-sm transition-colors flex items-center justify-between ${
+                    channelId === channel.id
+                      ? "bg-[var(--accent)] font-bold text-[var(--on-accent)] shadow-sm"
+                      : "text-[var(--ink-muted)] hover:bg-[var(--surface-raised)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  <span># {channel.name}</span>
+                </li>
+              ))}
+            </ul>
+
+            {currentWorkspaceId && (
+              <form onSubmit={handleCreateChannel} className="mt-3 px-2.5">
+                <input
+                  value={newChannel}
+                  onChange={(e) => setNewChannel(e.target.value)}
+                  placeholder="+ New channel"
+                  maxLength={100}
+                  aria-label="New channel name"
+                  className="w-full px-3 py-2 rounded-md text-sm bg-[var(--surface-raised)] text-[var(--ink)] placeholder-[var(--ink-muted)]"
+                />
+                {channelError && (
+                  <p role="alert" className="mt-1 text-xs text-red-300">{channelError}</p>
+                )}
+              </form>
+            )}
+          </div>
+
+          {/* Direct messages (layout from dev2's mock-up) */}
+          <div>
+            <p className="text-xs text-[var(--ink-muted)] uppercase tracking-widest pl-2.5 mb-2 font-semibold">Direct messages</p>
+            <ul className="list-none p-0 m-0 space-y-1">
+              {users.length === 0 && (
+                <li className="px-3 py-2 text-sm text-[var(--ink-muted)]">No colleagues yet.</li>
+              )}
+              {users.map((u) => {
+                const dm = directChannels.find((c) => c.name === u.username);
+                const selected = dm !== undefined && dm.id === channelId;
+                return (
+                  <li
+                    key={u.id}
+                    onClick={() => openDirect(u)}
+                    className={`px-3 py-2 rounded-md cursor-pointer text-sm transition-colors flex items-center justify-between ${
+                      selected
+                        ? "bg-[var(--accent)] font-bold text-[var(--on-accent)] shadow-sm"
+                        : "text-[var(--ink-muted)] hover:bg-[var(--surface-raised)] hover:text-[var(--ink)]"
+                    }`}
+                  >
+                    <span>@ {u.username}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
 
         <div className="p-5 border-t border-[var(--line-strong)]">
@@ -173,7 +226,7 @@ function Chat({ onLogout, user }) {
       {/* 2. ZONE DE DISCUSSION PRINCIPALE */}
       <div className="flex-1 flex flex-col h-full bg-[var(--bg)]">
         <div className="p-5 border-b border-[var(--line-strong)] flex items-center shadow-sm">
-          <h3 className="m-0 text-lg font-semibold tracking-wide text-[var(--ink)]">#{activeChannel}</h3>
+          <h3 className="m-0 text-lg font-semibold tracking-wide text-[var(--ink)]">{activeLabel}</h3>
         </div>
 
         <ScrollArea className="flex-1 p-5">
@@ -245,7 +298,7 @@ function Chat({ onLogout, user }) {
                 type="text" 
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder={`Envoyer un message dans #${activeChannel}`}
+                placeholder={`Message ${activeLabel}`}
                 className="w-full h-full pl-12 pr-12 bg-[var(--surface)] border-[var(--line-strong)] text-[var(--ink)] placeholder-[var(--ink-muted)]/50 focus-visible:ring-1 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-0 rounded-lg"
               />
 
