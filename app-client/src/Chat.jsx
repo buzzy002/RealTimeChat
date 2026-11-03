@@ -110,6 +110,13 @@ function Chat({ onLogout, user }) {
       socket = new WebSocket(`${proto}://${window.location.host}/ws/notifications/`);
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
+        if (data.type === 'sidebar') {
+          refreshChannels();
+          api('/users/').then(({ ok, data: d }) => {
+            if (ok) setUsers(d.users);
+          });
+          return;
+        }
         if (data.type !== 'notify' || data.channel_id === channelIdRef.current) return;
 
         setUnread((prev) => ({ ...prev, [data.channel_id]: (prev[data.channel_id] ?? 0) + 1 }));

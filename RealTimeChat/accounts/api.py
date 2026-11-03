@@ -1,6 +1,8 @@
 import json
 import re
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -59,6 +61,14 @@ def _join_default_workspace(user):
     Channel.objects.get_or_create(name="general", workspace=workspace)
     WorkspaceMembership.objects.get_or_create(user=user, workspace=workspace)
 
+def _notify_workspace(workspace_id, exclude_user_id=None):
+    """Tell every member's browser to reload its channels and colleagues."""
+    layer = get_channel_layer()
+    ids = WorkspaceMembership.objects.filter(workspace_id=workspace_id).values_list('user_id', flat=True)
+    for user_id in ids:
+        if user_id != exclude_user_id:
+            async_to_sync(layer.group_send)(f'user_{user_id}', {'type': 'sidebar.changed'})
+
 @require_POST
 def register_view(request):
     data = _read_json(request)
@@ -70,6 +80,7 @@ def register_view(request):
     with transaction.atomic():
         user = form.save()
         _join_default_workspace(user)
+    _notify_workspace(Workspace.objects.get(name=settings.DEFAULT_WORKSPACE_NAME).id, user.id)
     login(request, user)
     return JsonResponse({'user': _user_data(user)}, status=201)
 
@@ -137,6 +148,7 @@ def channels_view(request):
     channel, created = Channel.objects.get_or_create(name=name, workspace=membership.workspace)
     if not created:
         return _error('A channel with this name already exists.', 'duplicate', 400)
+    _notify_workspace(membership.workspace_id, request.user.id)
     return JsonResponse({'channel': _channel_data(channel)}, status=201)
 
 @require_GET
