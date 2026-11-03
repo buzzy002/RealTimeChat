@@ -100,3 +100,5 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(
             {"type": "notify", "channel_id": event["channel_id"], "message": event["message"]}
         )
+    async def sidebar_changed(self, event):
+        await self.send_json({"type": "sidebar"})
